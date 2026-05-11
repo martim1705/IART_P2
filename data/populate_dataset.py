@@ -13,10 +13,10 @@ for i in range(1, num_linhas + 1):
     idade = np.random.randint(18,40)
 
     distancia_jogo = round(np.random.uniform(0,13),1)
-    distancia_treino = round(np.random.uniform(),1)
+    distancia_treino = round(np.random.uniform(15,45),1)
 
     sprints_jogo =  np.random.randint(10, 65)
-    sprints_treino = np.rando.randint(30,160)
+    sprints_treino = np.random.randint(30,160)
 
     altura_salto = round(np.random.uniform(25, 60), 1)
 
@@ -32,10 +32,10 @@ for i in range(1, num_linhas + 1):
     tempo_descanso_entre_jogos = np.random.randint(2, 9)
 
 
-    score = 0
+    score_risco = 0
 
     if idade >= 30:
-        score += 1
+        score_risco += 1
 
     if distancia_jogo > 10.5:
         score_risco += 1
@@ -67,26 +67,28 @@ for i in range(1, num_linhas + 1):
     if tempo_descanso_entre_jogos <= 3:
         score_risco += 1
 
-    if score <= 2:
+    if score_risco <= 2:
         risco_lesao = 0
-    elif score > 2 and score <= 5:
+    elif score_risco > 2 and score_risco <= 5:
         risco_lesao = 1
     else:
         risco_lesao = 2
 
-dados.append([
-    nome, 
-    idade,
-    distancia_jogo,
-    distancia_treino,
-    altura_salto,
-    capacidade_aerobica,
-    capacidade_anaerobica,
-    lesao_recente,
-    ausencia_dores,
-    tempo_descanso_entre_jogos,
-    risco_lesao
-])
+    dados.append([
+        nome, 
+        idade,
+        distancia_jogo,
+        distancia_treino,
+        sprints_jogo,
+        sprints_treino,
+        altura_salto,
+        capacidade_aerobica,
+        capacidade_anaerobica,
+        lesao_recente,
+        ausencia_dores,
+        tempo_descanso_entre_jogos,
+        risco_lesao
+    ])
 
 df = pd.DataFrame(dados, columns=[
     "nome",
@@ -104,5 +106,5 @@ df = pd.DataFrame(dados, columns=[
     "risco_lesao"
 ])
 
-df.to_csv("dataset1.csv")
+df.to_csv("./data/dataset1.csv", index=False)
 
