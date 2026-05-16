@@ -1,7 +1,7 @@
 import pandas as pd 
 import numpy as np 
 
-num_linhas = 500 
+num_linhas = 1500 
 
 dados = []
 
@@ -69,7 +69,7 @@ for i in range(1, num_linhas + 1):
 
     if score_risco <= 2:
         risco_lesao = 0
-    elif score_risco > 2 and score_risco <= 5:
+    elif score_risco <= 4:
         risco_lesao = 1
     else:
         risco_lesao = 2
@@ -108,3 +108,4 @@ df = pd.DataFrame(dados, columns=[
 
 df.to_csv("./data/dataset1.csv", index=False)
 
+print(df["risco_lesao"].value_counts())
