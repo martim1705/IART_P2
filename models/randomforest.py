@@ -101,10 +101,7 @@ for coluna, importancia in zip(
 
 
 # guardar modelo
-joblib.dump(
-    model,
-    "models/injury_model.pkl"
-)
+joblib.dump(model, "models/rf_injury_model.pkl")
 
 print(
     "\nModelo guardado."

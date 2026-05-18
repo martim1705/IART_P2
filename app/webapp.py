@@ -44,21 +44,58 @@ with st.sidebar:
     st.markdown("Dinis Bahia")
 
 
-# Verificar se modelo existe
-model_path = "models/injury_model.pkl"
+# Detectar modelos disponíveis
+available_models = {}
 
-if not os.path.exists(model_path):
-    st.error("Modelo não encontrado! Por favor treina primeiro o modelo executando `randomforest.py`")
+if os.path.exists("models/rf_injury_model.pkl"):
+    available_models["Random Forest"] = "models/rf_injury_model.pkl"
+
+if os.path.exists("models/dt_injury_model.pkl"):
+    available_models["Decision Tree"] = "models/dt_injury_model.pkl"
+
+if os.path.exists("models/lr_injury_model.pkl"):
+    available_models["Logistic Regression"] = "models/lr_injury_model.pkl"
+
+# Fallback para o modelo antigo
+if os.path.exists("models/injury_model.pkl") and len(available_models) == 0:
+    available_models["Random Forest (old)"] = "models/injury_model.pkl"
+
+# Verificar se há modelos disponíveis
+if len(available_models) == 0:
+    st.error("Nenhum modelo encontrado!")
+    st.warning("""
+    Por favor treina pelo menos um modelo primeiro:
+    - `python models/randomforest.py`
+    - `python models/decisiontree.py`
+    - `python models/logistic.py`
+    """)
     st.stop()
 
-# Carregar modelo
+# Seletor de modelo
+st.subheader("Selecionar Modelo")
+selected_model_name = st.selectbox(
+    "Escolhe o modelo para fazer previsões:",
+    options=list(available_models.keys()),
+    index=0
+)
+
+# Carregar modelo selecionado
 @st.cache_resource
-def load_model():
+def load_model(model_path):
     return joblib.load(model_path)
 
-model = load_model()
+model_path = available_models[selected_model_name]
+model = load_model(model_path)
 
-st.success("Modelo Random Forest carregado com sucesso!")
+# Carregar scaler se for Logistic Regression
+scaler = None
+if "Logistic" in selected_model_name and os.path.exists("models/lr_scaler.pkl"):
+    @st.cache_resource
+    def load_scaler():
+        return joblib.load("models/lr_scaler.pkl")
+    scaler = load_scaler()
+
+st.success(f"Modelo **{selected_model_name}** carregado com sucesso!")
 
 # Criar tabs
 tab1, tab2, tab3 = st.tabs(["Previsão Individual", "Previsão em Lote", "Sobre o Modelo"])
@@ -125,9 +162,14 @@ with tab1:
             'tempo_descanso_entre_jogos': [tempo_descanso]
         })
         
-        # Fazer previsão
-        prediction = model.predict(input_data)[0]
-        proba = model.predict_proba(input_data)[0]
+        # Normalizar se for Logistic Regression
+        if scaler is not None:
+            input_data_scaled = scaler.transform(input_data)
+            prediction = model.predict(input_data_scaled)[0]
+            proba = model.predict_proba(input_data_scaled)[0]
+        else:
+            prediction = model.predict(input_data)[0]
+            proba = model.predict_proba(input_data)[0]
         
         # Mostrar resultado
         st.markdown("### Resultado da Previsão")
@@ -235,9 +277,15 @@ with tab2:
                 has_true_labels = False
             
             # Fazer previsões
-            if st.button("🔮 Fazer Previsões em Lote", type="primary"):
-                predictions = model.predict(X_batch)
-                probas = model.predict_proba(X_batch)
+            if st.button("Fazer Previsões em Lote", type="primary"):
+                # Normalizar se for Logistic Regression
+                if scaler is not None:
+                    X_batch_scaled = scaler.transform(X_batch)
+                    predictions = model.predict(X_batch_scaled)
+                    probas = model.predict_proba(X_batch_scaled)
+                else:
+                    predictions = model.predict(X_batch)
+                    probas = model.predict_proba(X_batch)
                 
                 # Criar DataFrame de resultados
                 results_df = pd.DataFrame({
@@ -301,27 +349,45 @@ with tab3:
     
     with col_info1:
         st.subheader("Modelo Utilizado")
-        st.markdown("""
-        **Random Forest Classifier**
-        
-        - **N° de Árvores:** 100
-        - **Profundidade Máxima:** 15
-        - **Random State:** 42
-        
-        **Porquê Random Forest?**
-        - Robusto contra overfitting
-        - Boa performance com dados tabulares
-        - Fornece importância das features
-        - Lida bem com relações não-lineares
+        st.markdown(f"""
+        **{selected_model_name}**
         """)
         
-        st.subheader("Dataset de Treino")
-        st.markdown("""
-        - **Total de amostras:** 500 jogadores
-        - **Features:** 11 variáveis
-        - **Classes:** 3 níveis de risco
-        - **Split:** 80% treino, 20% teste
-        """)
+        # Informação específica por modelo
+        if "Random Forest" in selected_model_name:
+            st.markdown("""
+            - **N° de Árvores:** 100
+            - **Profundidade Máxima:** 15
+            - **Random State:** 42
+            
+            **Porquê Random Forest?**
+            - Robusto contra overfitting
+            - Boa performance com dados tabulares
+            - Fornece importância das features
+            - Lida bem com relações não-lineares
+            """)
+        elif "Decision Tree" in selected_model_name:
+            st.markdown("""
+            - **Profundidade Máxima:** 8
+            - **Min Samples Split:** 10
+            - **Min Samples Leaf:** 5
+            
+            **Porquê Decision Tree?**
+            - Muito interpretável (árvore visual)
+            - Fácil explicar decisões
+            - Não precisa normalização
+            """)
+        elif "Logistic" in selected_model_name:
+            st.markdown("""
+            - **Solver:** lbfgs
+            - **Multi-class:** multinomial
+            - **Max Iterations:** 1000
+            
+            **Porquê Logistic Regression?**
+            - Baseline simples e rápido
+            - Coeficientes interpretáveis
+            - Bom para relações lineares
+            """)
     
     with col_info2:
         st.subheader("Performance do Modelo")
