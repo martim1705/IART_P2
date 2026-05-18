@@ -250,7 +250,10 @@ with tab2:
                 
                 if has_true_labels:
                     results_df['Risco Real'] = y_true.values
-                    results_df['Correto?'] = (predictions == y_true.values).map({True: '✅', False: '❌'})
+                    # Corrigir: converter para Series primeiro antes de usar .map()
+                    correct_array = (predictions == y_true.values)
+                    results_df['Correto?'] = pd.Series(correct_array).map({True: '✅', False: '❌'}).values
+
                 
                 st.subheader("📋 Resultados das Previsões")
                 st.dataframe(results_df)
